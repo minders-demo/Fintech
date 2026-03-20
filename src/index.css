@@ -1,0 +1,19 @@
+@import "tailwindcss";
+
+@theme {
+  --color-brand-orange: #FF5C1A;
+  --color-brand-sidebar: #151820;
+  --color-brand-bg: #0D0F14;
+  --color-brand-card: #1E2028;
+  --color-brand-border: #2D3139;
+  --color-minders-dark: #0D0F14;
+  --color-minders-card: #1E2028;
+  --color-minders-border: #2D3139;
+  --color-minders-orange: #FF8A00;
+  --color-minders-gray: #94A3B8;
+}
+
+body {
+  background-color: var(--color-brand-bg);
+  color: #ffffff;
+}
