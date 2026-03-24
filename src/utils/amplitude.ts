@@ -17,7 +17,7 @@ import { Identify } from '@amplitude/analytics-browser';
 
 // ─── Reemplaza con tu API Key real de Amplitude ─────────────────────────────
 // Amplitude > Settings > Projects > tu proyecto > API Key
-const AMPLITUDE_API_KEY = 'TU_AMPLITUDE_API_KEY_AQUI';
+const AMPLITUDE_API_KEY = '84ace0d2f36082f53ba6988af698a0b6';
 
 // ─── Inicialización ─────────────────────────────────────────────────────────
 // Ref: https://amplitude.com/docs/sdks/analytics/browser/browser-sdk-2#initialize-the-sdk
