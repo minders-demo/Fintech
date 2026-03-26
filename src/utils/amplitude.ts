@@ -19,6 +19,9 @@ import { Identify } from '@amplitude/analytics-browser';
 // Amplitude > Settings > Projects > tu proyecto > API Key
 const AMPLITUDE_API_KEY = '84ace0d2f36082f53ba6988af698a0b6';
 
+// ─── DEBUG: Cambiar a false cuando confirmes que los 7 eventos llegan ────────
+const DEBUG_ACTIVATION = true;
+
 // ─── Inicialización ─────────────────────────────────────────────────────────
 // Ref: https://amplitude.com/docs/sdks/analytics/browser/browser-sdk-2#initialize-the-sdk
 export function initAmplitude(): void {
@@ -33,10 +36,16 @@ export function initAmplitude(): void {
       fileDownloads: false,
       elementInteractions: false,
     },
-    // Cambiar a amplitude.Types.LogLevel.Debug durante desarrollo
-    // Ref: https://amplitude.com/docs/sdks/analytics/browser/browser-sdk-2#debugging
-    logLevel: amplitude.Types.LogLevel.Warn,
+    // ▶ CAMBIADO A DEBUG para diagnosticar los 7 eventos faltantes
+    // Esto imprime CADA evento en la consola del navegador
+    // Vuelve a Warn cuando todo funcione:
+    //   logLevel: amplitude.Types.LogLevel.Warn,
+    logLevel: amplitude.Types.LogLevel.Debug,
   });
+
+  if (DEBUG_ACTIVATION) {
+    console.log('[MindersAmp] ✅ Amplitude initialized with DEBUG mode');
+  }
 }
 
 // ─── Helpers ────────────────────────────────────────────────────────────────
@@ -47,6 +56,18 @@ function identifyUser(properties: Record<string, unknown>): void {
     id.set(key, value as string | number | boolean);
   });
   amplitude.identify(id);
+}
+
+// Helper para trackear con diagnóstico
+function safeTrack(eventName: string, properties: Record<string, unknown>): void {
+  try {
+    if (DEBUG_ACTIVATION) {
+      console.log(`[MindersAmp] 🔵 Sending: ${eventName}`, properties);
+    }
+    amplitude.track(eventName, properties);
+  } catch (error) {
+    console.error(`[MindersAmp] 🔴 FAILED: ${eventName}`, error);
+  }
 }
 
 // Ref: https://amplitude.com/docs/get-started/identify-users
@@ -302,15 +323,17 @@ export function trackTopupStarted(): void {
   });
 }
 
+// ▶ DIAGNÓSTICO: Este evento no aparecía en Amplitude
 export function trackTopupChannelSelected(channel: 'bank_transfer' | 'cash'): void {
-  amplitude.track('topup_channel_selected', {
+  safeTrack('topup_channel_selected', {
     channel,
     phase: 'funding',
   });
 }
 
+// ▶ DIAGNÓSTICO: Este evento no aparecía en Amplitude
 export function trackTopupCompleted(amount: number, channel: string): void {
-  amplitude.track('topup_completed', {
+  safeTrack('topup_completed', {
     amount,
     channel,
     phase: 'funding',
@@ -359,14 +382,16 @@ export function trackPayServiceCompleted(serviceName: string, amount: number): v
   });
 }
 
+// ▶ DIAGNÓSTICO: Este evento no aparecía en Amplitude
 export function trackMobileTopupStarted(): void {
-  amplitude.track('mobile_topup_started', {
+  safeTrack('mobile_topup_started', {
     phase: 'first_transaction',
   });
 }
 
+// ▶ DIAGNÓSTICO: Este evento no aparecía en Amplitude
 export function trackMobileTopupCompleted(operator: string, amount: number, country: string): void {
-  amplitude.track('mobile_topup_completed', {
+  safeTrack('mobile_topup_completed', {
     operator,
     amount,
     country,
@@ -393,14 +418,16 @@ export function trackFirstTransactionCompleted(
 
 // ── ENGAGEMENT ADICIONAL ────────────────────────────────────────────────────
 
+// ▶ DIAGNÓSTICO: Este evento no aparecía en Amplitude
 export function trackMovementsViewed(): void {
-  amplitude.track('movements_viewed', {
+  safeTrack('movements_viewed', {
     phase: 'engagement',
   });
 }
 
+// ▶ DIAGNÓSTICO: Este evento no aparecía en Amplitude
 export function trackPocketCreated(name: string, goalAmount: number): void {
-  amplitude.track('pocket_created', {
+  safeTrack('pocket_created', {
     pocket_name: name,
     goal_amount: goalAmount,
     phase: 'engagement',
@@ -410,8 +437,9 @@ export function trackPocketCreated(name: string, goalAmount: number): void {
   });
 }
 
+// ▶ DIAGNÓSTICO: Este evento no aparecía en Amplitude
 export function trackProfileViewed(): void {
-  amplitude.track('profile_viewed', {
+  safeTrack('profile_viewed', {
     phase: 'engagement',
   });
 }
