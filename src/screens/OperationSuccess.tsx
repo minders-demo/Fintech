@@ -1,12 +1,18 @@
-import React from 'react';
+import React, { useEffect, useRef } from 'react';
 import { Screen, TransferData } from '../types';
 import { CheckCircle, Share2, Download, Home, Lock } from 'lucide-react';
 import { useMovements } from '../context/MovementsContext';
 import { formatUSD } from '../utils/format';
+import {
+  trackFirstTransactionCompleted,
+  trackPayServiceCompleted,
+  trackMobileTopupCompleted,
+} from '../utils/amplitude';
 
 export function OperationSuccessScreen({ navigate, data }: { navigate: (s: Screen) => void, data?: TransferData }) {
   const { getLatestTransaction } = useMovements();
   const movement = getLatestTransaction();
+  const hasTracked = useRef(false);
   
   const successType = data?.successType ?? 'transfer';
   const isPinSuccess = successType === 'pin';
@@ -15,6 +21,33 @@ export function OperationSuccessScreen({ navigate, data }: { navigate: (s: Scree
   const isPayServicesSuccess = successType === 'pay_services';
   const isMobileTopupSuccess = successType === 'mobile_topup';
   const showReceipt = isTransferSuccess || isPayServicesSuccess || isMobileTopupSuccess;
+
+  // ── Activation: track transaction completion + AHA MOMENT ──
+  useEffect(() => {
+    if (!hasTracked.current) {
+      const amount = Number(movement?.amount || data?.amount || 0);
+
+      // Track specific completion event per type
+      if (isPayServicesSuccess) {
+        trackPayServiceCompleted(data?.recipient || 'Servicio', amount);
+      }
+      if (isMobileTopupSuccess) {
+        trackMobileTopupCompleted(data?.recipient || 'Operador', amount, 'CO');
+      }
+
+      // ★ AHA MOMENT: fire for any money-out transaction
+      if (isTransferSuccess || isPayServicesSuccess || isMobileTopupSuccess) {
+        const txType = isTransferSuccess
+          ? 'transfer'
+          : isPayServicesSuccess
+          ? 'pay_services'
+          : 'mobile_topup';
+        trackFirstTransactionCompleted(txType, amount);
+      }
+
+      hasTracked.current = true;
+    }
+  }, []);
 
   const getOperationTitle = () => {
     if (isPayServicesSuccess) return 'Pago de servicio';
