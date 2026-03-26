@@ -1,9 +1,20 @@
-import React from 'react';
+import React, { useEffect, useRef } from 'react';
 import { Screen } from '../types';
 import { CreditCard, PlusCircle, Lock, Settings, History, ArrowRight, Eye, EyeOff, Copy, Ban, LifeBuoy } from 'lucide-react';
 import { formatUSD } from '../utils/format';
+import { trackCardViewed } from '../utils/amplitude';
 
 export function CardsScreen({ navigate }: { navigate: (s: Screen) => void }) {
+  const hasTracked = useRef(false);
+
+  // ── Activation: track card viewed ──
+  useEffect(() => {
+    if (!hasTracked.current) {
+      trackCardViewed();
+      hasTracked.current = true;
+    }
+  }, []);
+
   return (
     <div className="flex flex-col gap-8 max-w-[1200px] mx-auto w-full">
       {/* Header */}
