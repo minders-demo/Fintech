@@ -1,9 +1,30 @@
-import React from 'react';
+import React, { useEffect, useRef } from 'react';
 import { Screen, TransferData } from '../types';
 import { formatUSD } from '../utils/format';
 import { useMovements } from '../context/MovementsContext';
+import {
+  trackTopupStarted,
+  trackTopupChannelSelected,
+  trackTopupCompleted,
+} from '../utils/amplitude';
 
 export function TopupChannelScreen({ navigate }: { navigate: (s: Screen) => void }) {
+  const hasTracked = useRef(false);
+
+  // ── Activation: track topup flow started ──
+  useEffect(() => {
+    if (!hasTracked.current) {
+      trackTopupStarted();
+      hasTracked.current = true;
+    }
+  }, []);
+
+  // ── Activation: track channel selection ──
+  const handleSelectChannel = (channel: 'bank_transfer' | 'cash', screen: Screen) => {
+    trackTopupChannelSelected(channel);
+    navigate(screen);
+  };
+
   return (
     <div className="min-h-[calc(100vh-64px)] flex items-center justify-center p-4">
       <div className="w-full max-w-[480px]">
@@ -20,7 +41,7 @@ export function TopupChannelScreen({ navigate }: { navigate: (s: Screen) => void
         </header>
 
         <div className="space-y-4">
-          <button onClick={() => navigate('topup_instructions')} className="w-full bg-brand-sidebar border border-brand-border hover:border-brand-orange rounded-2xl p-6 text-left transition-all group relative overflow-hidden">
+          <button onClick={() => handleSelectChannel('bank_transfer', 'topup_instructions')} className="w-full bg-brand-sidebar border border-brand-border hover:border-brand-orange rounded-2xl p-6 text-left transition-all group relative overflow-hidden">
             <div className="absolute inset-0 bg-gradient-to-r from-brand-orange/0 to-brand-orange/5 opacity-0 group-hover:opacity-100 transition-opacity"></div>
             <div className="flex items-start gap-5 relative z-10">
               <div className="w-12 h-12 rounded-xl bg-brand-card border border-brand-border flex items-center justify-center shrink-0 text-brand-orange group-hover:scale-110 transition-transform">
@@ -36,7 +57,7 @@ export function TopupChannelScreen({ navigate }: { navigate: (s: Screen) => void
             </div>
           </button>
 
-          <button onClick={() => navigate('topup_cash')} className="w-full bg-brand-sidebar border border-brand-border hover:border-brand-orange rounded-2xl p-6 text-left transition-all group relative overflow-hidden">
+          <button onClick={() => handleSelectChannel('cash', 'topup_cash')} className="w-full bg-brand-sidebar border border-brand-border hover:border-brand-orange rounded-2xl p-6 text-left transition-all group relative overflow-hidden">
             <div className="absolute inset-0 bg-gradient-to-r from-brand-orange/0 to-brand-orange/5 opacity-0 group-hover:opacity-100 transition-opacity"></div>
             <div className="flex items-start gap-5 relative z-10">
               <div className="w-12 h-12 rounded-xl bg-brand-card border border-brand-border flex items-center justify-center shrink-0 text-green-400 group-hover:scale-110 transition-transform">
@@ -221,6 +242,15 @@ export function TopupCashScreen({ navigate }: { navigate: (s: Screen, d?: Transf
 export function TopupSuccessScreen({ navigate, data }: { navigate: (s: Screen) => void, data?: TransferData }) {
   const { balance } = useMovements();
   const amount = data ? parseFloat(data.amount) : 15000;
+  const hasTracked = useRef(false);
+
+  // ── Activation: track topup completed ──
+  useEffect(() => {
+    if (!hasTracked.current) {
+      trackTopupCompleted(amount, data?.recipient === 'Recarga' ? 'cash' : 'bank_transfer');
+      hasTracked.current = true;
+    }
+  }, []);
 
   return (
     <div className="min-h-[calc(100vh-64px)] flex items-center justify-center p-4">
