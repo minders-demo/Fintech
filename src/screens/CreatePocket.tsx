@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Screen } from '../types';
 import { ArrowLeft, ArrowRight, CheckCircle, PiggyBank, Target, Calendar, Info } from 'lucide-react';
 import { formatUSD } from '../utils/format';
+import { trackPocketCreated } from '../utils/amplitude';
 
 export function CreatePocketScreen({ navigate }: { navigate: (s: Screen) => void }) {
   const [name, setName] = useState('');
@@ -11,6 +12,7 @@ export function CreatePocketScreen({ navigate }: { navigate: (s: Screen) => void
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (name && goal && date) {
+      trackPocketCreated(name, Number(goal));
       navigate('pocket_detail');
     }
   };
