@@ -1,8 +1,9 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { ArrowLeft, Lightbulb, Droplets, Flame, Phone, Tv, Wifi, Search, Loader2, AlertCircle, CheckCircle2 } from 'lucide-react';
 import { Screen } from '../types';
 import { useMovements } from '../context/MovementsContext';
 import { formatUSD } from '../utils/format';
+import { trackPayServiceStarted } from '../utils/amplitude';
 
 interface PayServicesScreenProps {
   navigate: (screen: Screen, data?: any) => void;
@@ -124,6 +125,15 @@ export function PayServicesScreen({ navigate }: PayServicesScreenProps) {
   const [reference, setReference] = useState('');
   const [isConsulting, setIsConsulting] = useState(false);
   const [simulatedBill, setSimulatedBill] = useState<any>(null);
+  const hasTrackedMount = useRef(false);
+
+  // ── Activation: track pay service started ──
+  useEffect(() => {
+    if (!hasTrackedMount.current) {
+      trackPayServiceStarted();
+      hasTrackedMount.current = true;
+    }
+  }, []);
 
   const handleConsult = async () => {
     if (!selectedService || reference.length < 5) return;
@@ -398,4 +408,3 @@ export function PayServicesScreen({ navigate }: PayServicesScreenProps) {
     </div>
   );
 }
-
