@@ -1,8 +1,9 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Screen } from '../types';
 import { ArrowLeft, Smartphone, CheckCircle, Search, Wifi, CreditCard, Globe } from 'lucide-react';
 import { formatUSD } from '../utils/format';
 import { useMovements } from '../context/MovementsContext';
+import { trackMobileTopupStarted } from '../utils/amplitude';
 
 const operators = [
   // Colombia
@@ -58,6 +59,15 @@ export function MobileTopupScreen({ navigate }: { navigate: (s: Screen, data?: a
   const [operator, setOperator] = useState('');
   const [amount, setAmount] = useState('');
   const [country, setCountry] = useState('CO');
+  const hasTrackedMount = useRef(false);
+
+  // ── Activation: track mobile topup started ──
+  useEffect(() => {
+    if (!hasTrackedMount.current) {
+      trackMobileTopupStarted();
+      hasTrackedMount.current = true;
+    }
+  }, []);
 
   const amounts = ['5', '10', '15', '20', '25', '50'];
 
