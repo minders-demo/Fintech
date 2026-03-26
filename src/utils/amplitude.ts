@@ -1,5 +1,5 @@
 // =============================================================================
-// MinderspPay — Amplitude Onboarding Tracking
+// MinderspPay — Amplitude Tracking: Onboarding + Activación
 // Ref: https://amplitude.com/docs/sdks/analytics/browser/browser-sdk-2
 // =============================================================================
 //
@@ -204,5 +204,214 @@ export function trackOnboardingCompleted(): void {
 export function trackOnboardingCtaClicked(): void {
   amplitude.track('onboarding_cta_clicked', {
     cta_text: 'ir_a_mi_cuenta',
+  });
+}
+
+// =============================================================================
+// EVENTOS DE ACTIVACIÓN (Post-Onboarding → Aha Moment)
+// =============================================================================
+//
+// El "Aha Moment" de Minders Pay es cuando el usuario completa su primera
+// transacción real (transferencia, pago de servicios o recarga móvil).
+// Ese es el momento en el que siente el valor core del producto.
+//
+// FLUJO DE ACTIVACIÓN:
+// ┌─────────────────────────────────────────────────────────────────────────┐
+// │ Fase 1 — Entrada                                                       │
+// │   activation_started (Dashboard se monta por primera vez)              │
+// │                                                                         │
+// │ Fase 2 — Exploración                                                   │
+// │   balance_viewed · quick_action_tapped · card_viewed                   │
+// │                                                                         │
+// │ Fase 3 — Fondeo (money-in)                                             │
+// │   topup_started → topup_channel_selected → topup_completed             │
+// │                                                                         │
+// │ Fase 4 — Primera transacción (money-out) ← AHA MOMENT                 │
+// │   transfer_started → transfer_recipient_filled → transfer_confirmed    │
+// │   pay_service_started → pay_service_completed                          │
+// │   mobile_topup_started → mobile_topup_completed                        │
+// │                          ↓                                             │
+// │              first_transaction_completed  ★                            │
+// │                                                                         │
+// │ Engagement adicional                                                    │
+// │   movements_viewed · pocket_created · profile_viewed                   │
+// └─────────────────────────────────────────────────────────────────────────┘
+//
+// | #  | Evento                          | Pantalla            | Trigger                                |
+// |----|---------------------------------|---------------------|----------------------------------------|
+// | 1  | activation_started              | Dashboard           | Pantalla montada (1ra vez)             |
+// | 2  | balance_viewed                  | Dashboard           | Toggle ocultar/mostrar saldo           |
+// | 3  | quick_action_tapped             | Dashboard           | Clic en cualquier acción rápida        |
+// | 4  | card_viewed                     | Cards               | Pantalla montada                       |
+// | 5  | topup_started                   | TopupChannel        | Pantalla montada                       |
+// | 6  | topup_channel_selected          | TopupChannel        | Clic en canal (banco o efectivo)       |
+// | 7  | topup_completed                 | TopupSuccess        | Pantalla montada (dinero acreditado)   |
+// | 8  | transfer_started                | Transfer            | Pantalla montada                       |
+// | 9  | transfer_recipient_filled       | Transfer            | Selecciona contacto o escribe destino  |
+// | 10 | transfer_confirmed              | TransferConfirm     | Clic "Confirmar y enviar"              |
+// | 11 | pay_service_started             | PayServices         | Pantalla montada                       |
+// | 12 | pay_service_completed           | OperationSuccess    | Pantalla éxito (tipo pay_services)     |
+// | 13 | mobile_topup_started            | MobileTopup         | Pantalla montada                       |
+// | 14 | mobile_topup_completed          | OperationSuccess    | Pantalla éxito (tipo mobile_topup)     |
+// | 15 | first_transaction_completed     | OperationSuccess    | Cualquier operación exitosa = AHA      |
+// | 16 | movements_viewed                | Movements           | Pantalla montada                       |
+// | 17 | pocket_created                  | CreatePocket        | Submit del formulario                  |
+// | 18 | profile_viewed                  | Profile             | Pantalla montada                       |
+// =============================================================================
+
+// ── FASE 1: ENTRADA ─────────────────────────────────────────────────────────
+
+export function trackActivationStarted(): void {
+  amplitude.track('activation_started', {
+    source: 'dashboard',
+    phase: 'entry',
+  });
+  identifyUser({
+    activation_phase: 'started',
+  });
+}
+
+// ── FASE 2: EXPLORACIÓN ─────────────────────────────────────────────────────
+
+export function trackBalanceViewed(action: 'show' | 'hide'): void {
+  amplitude.track('balance_viewed', {
+    action,
+    phase: 'exploration',
+  });
+}
+
+export function trackQuickActionTapped(actionLabel: string, destination: string): void {
+  amplitude.track('quick_action_tapped', {
+    action_label: actionLabel,
+    destination,
+    phase: 'exploration',
+  });
+}
+
+export function trackCardViewed(): void {
+  amplitude.track('card_viewed', {
+    phase: 'exploration',
+  });
+}
+
+// ── FASE 3: FONDEO (MONEY-IN) ───────────────────────────────────────────────
+
+export function trackTopupStarted(): void {
+  amplitude.track('topup_started', {
+    phase: 'funding',
+  });
+}
+
+export function trackTopupChannelSelected(channel: 'bank_transfer' | 'cash'): void {
+  amplitude.track('topup_channel_selected', {
+    channel,
+    phase: 'funding',
+  });
+}
+
+export function trackTopupCompleted(amount: number, channel: string): void {
+  amplitude.track('topup_completed', {
+    amount,
+    channel,
+    phase: 'funding',
+  });
+  identifyUser({
+    activation_phase: 'funded',
+    has_funded: true,
+    first_topup_amount: amount,
+  });
+}
+
+// ── FASE 4: PRIMERA TRANSACCIÓN (AHA MOMENT) ────────────────────────────────
+
+export function trackTransferStarted(): void {
+  amplitude.track('transfer_started', {
+    phase: 'first_transaction',
+  });
+}
+
+export function trackTransferRecipientFilled(method: 'contact_selected' | 'manual_input'): void {
+  amplitude.track('transfer_recipient_filled', {
+    method,
+    phase: 'first_transaction',
+  });
+}
+
+export function trackTransferConfirmed(amount: number, recipient: string): void {
+  amplitude.track('transfer_confirmed', {
+    amount,
+    recipient,
+    phase: 'first_transaction',
+  });
+}
+
+export function trackPayServiceStarted(): void {
+  amplitude.track('pay_service_started', {
+    phase: 'first_transaction',
+  });
+}
+
+export function trackPayServiceCompleted(serviceName: string, amount: number): void {
+  amplitude.track('pay_service_completed', {
+    service_name: serviceName,
+    amount,
+    phase: 'first_transaction',
+  });
+}
+
+export function trackMobileTopupStarted(): void {
+  amplitude.track('mobile_topup_started', {
+    phase: 'first_transaction',
+  });
+}
+
+export function trackMobileTopupCompleted(operator: string, amount: number, country: string): void {
+  amplitude.track('mobile_topup_completed', {
+    operator,
+    amount,
+    country,
+    phase: 'first_transaction',
+  });
+}
+
+// ★ AHA MOMENT — Se dispara en CUALQUIER operación exitosa
+export function trackFirstTransactionCompleted(
+  type: 'transfer' | 'pay_services' | 'mobile_topup',
+  amount: number
+): void {
+  amplitude.track('first_transaction_completed', {
+    transaction_type: type,
+    amount,
+    phase: 'aha_moment',
+  });
+  identifyUser({
+    activation_phase: 'activated',
+    is_activated: true,
+    activation_transaction_type: type,
+  });
+}
+
+// ── ENGAGEMENT ADICIONAL ────────────────────────────────────────────────────
+
+export function trackMovementsViewed(): void {
+  amplitude.track('movements_viewed', {
+    phase: 'engagement',
+  });
+}
+
+export function trackPocketCreated(name: string, goalAmount: number): void {
+  amplitude.track('pocket_created', {
+    pocket_name: name,
+    goal_amount: goalAmount,
+    phase: 'engagement',
+  });
+  identifyUser({
+    has_pocket: true,
+  });
+}
+
+export function trackProfileViewed(): void {
+  amplitude.track('profile_viewed', {
+    phase: 'engagement',
   });
 }
