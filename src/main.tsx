@@ -1,15 +1,13 @@
-import {StrictMode} from 'react';
-import {createRoot} from 'react-dom/client';
-import App from './App.tsx';
-import './index.css';
-import { initAmplitude } from './utils/amplitude';
+import { initAmplitude, fetchFeatureVariants } from './utils/amplitude';
 
-// Inicializar Amplitude antes de montar la app
-// Ref: https://amplitude.com/docs/sdks/analytics/browser/browser-sdk-2#initialize-the-sdk
+// Inicializar Amplitude
 initAmplitude();
 
-createRoot(document.getElementById('root')!).render(
-  <StrictMode>
-    <App />
-  </StrictMode>,
-);
+// Cargar los valores de los feature flags ANTES de montar la app
+fetchFeatureVariants().then(() => {
+  createRoot(document.getElementById('root')!).render(
+    <StrictMode>
+      <App />
+    </StrictMode>,
+  );
+});
